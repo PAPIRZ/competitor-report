@@ -52,7 +52,7 @@
   const matrixWrap = $("matrix");
   const competitorNames = data.competitors.map((c) => c.name);
 
-  function renderMatrix(filterText) {
+   function renderMatrix(filterText) {
     matrixWrap.innerHTML = "";
     const q = (filterText || "").trim().toLowerCase();
 
@@ -66,29 +66,47 @@
 
       if (features.length === 0) return;
 
-      const sec = document.createElement("div");
-      sec.className = "card";
-      sec.innerHTML = `
-        <div class="row space-between">
-          <div class="h3">${idx + 1}. ${escapeHtml(cat.category)}</div>
-          <div class="muted">${features.length} 条</div>
-        </div>
-        <div class="tableWrap mt12">
+      const competitorNames = data.competitors.map((c) => c.name);
+
+      // ✅ 用 details/summary 让整个模块可折叠
+      const wrapper = document.createElement("details");
+      wrapper.className = "card";
+      wrapper.open = false; // 默认收起；如果你想默认展开改成 true
+
+      const summary = document.createElement("summary");
+      summary.className = "row space-between";
+      summary.style.cursor = "pointer";
+      summary.style.listStyle = "none"; // 让部分浏览器的默认三角不占位
+      summary.innerHTML = `
+        <div class="h3">${idx + 1}. ${escapeHtml(cat.category)}</div>
+        <div class="muted">${features.length} 条</div>
+      `;
+
+      // 防止 summary 点击选中文字导致怪异体验
+      summary.addEventListener("mousedown", (e) => e.preventDefault());
+
+      const content = document.createElement("div");
+      content.className = "mt12";
+
+      content.innerHTML = `
+        <div class="tableWrap">
           <table class="table">
             <thead>
               <tr>
                 <th style="min-width:280px">Elven 功能点</th>
                 <th style="min-width:90px">Elven</th>
-                ${competitorNames.map((n) => `<th style="min-width:100px">${escapeHtml(n)}</th>`).join("")}
+                ${competitorNames
+                  .map((n) => `<th style="min-width:100px">${escapeHtml(n)}</th>`)
+                  .join("")}
               </tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
       `;
-      matrixWrap.appendChild(sec);
 
-      const tbody = sec.querySelector("tbody");
+      const tbody = content.querySelector("tbody");
+
       features.forEach((f) => {
         const tr = document.createElement("tr");
 
@@ -106,8 +124,13 @@
 
         tbody.appendChild(tr);
       });
+
+      wrapper.appendChild(summary);
+      wrapper.appendChild(content);
+      matrixWrap.appendChild(wrapper);
     });
   }
+
 
   function statusCell(status, note) {
     const td = document.createElement("td");
