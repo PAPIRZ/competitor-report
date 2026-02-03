@@ -143,3 +143,24 @@ a{color:inherit;text-decoration:none}
   .grid{grid-template-columns:1fr}
   .search{width:100%}
 }
+/* Collapsible categories */
+details > summary {
+  user-select: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details > summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--muted);
+  transform: translateY(-1px);
+}
+details[open] > summary::before {
+  content: "▾";
+}
+details > summary:hover {
+  background: #ffffff;
+  border-radius: 14px;
+}
