@@ -49,7 +49,10 @@
     bcWrap.appendChild(div);
   });
 
-  const matrixWrap = $("matrix");
+  const matrixTree = $("matrixTree");
+const matrixDetail = $("matrixDetail");
+const competitorNames = data.competitors.map((c) => c.name);
+
   // === Feature Matrix Title ===
 const matrixTitle = document.createElement("div");
 matrixTitle.className = "card";
@@ -63,48 +66,207 @@ matrixWrap.appendChild(matrixTitle);
 
   const competitorNames = data.competitors.map((c) => c.name);
 
-   function renderMatrix(filterText) {
-    matrixWrap.innerHTML = "";
-    const q = (filterText || "").trim().toLowerCase();
+function parseCategory(raw) {
+  // raw like: "1. 数据导入与账户管理 / 账户接入与管理"
+  const out = { mainIndex: "", mainName: "", subName: raw || "" };
 
-    data.featureMatrix.forEach((cat, idx) => {
-      const features = (cat.features || []).filter((f) => {
-        if (!q) return true;
-        const name = String(f.name || "").toLowerCase();
-        const catName = String(cat.category || "").toLowerCase();
-        return name.includes(q) || catName.includes(q);
+  if (!raw) return out;
+
+  if (raw.includes("/")) {
+    const parts = raw.split("/");
+    const left = parts[0].trim();
+    out.subName = parts[1].trim();
+
+    const m = left.match(/^(\d+)\.\s*(.+)$/);
+    if (m) {
+      out.mainIndex = m[1];
+      out.mainName = m[2];
+    } else {
+      out.mainName = left;
+    }
+  } else {
+    const m = raw.match(/^(\d+)\.\s*(.+)$/);
+    if (m) {
+      out.mainIndex = m[1];
+      out.mainName = m[2];
+      out.subName = "";
+    } else {
+      out.mainName = raw;
+      out.subName = "";
+    }
+  }
+
+  return out;
+}
+
+function buildFeatureTree(filterText) {
+  const q = (filterText || "").trim().toLowerCase();
+
+  // group by mainIndex+mainName
+  const groups = new Map();
+
+  data.featureMatrix.forEach((cat) => {
+    const raw = cat.category || "";
+    const p = parseCategory(raw);
+
+    const featuresFiltered = (cat.features || []).filter((f) => {
+      if (!q) return true;
+      const name = String(f.name || "").toLowerCase();
+      const catName = String(raw).toLowerCase();
+      return name.includes(q) || catName.includes(q);
+    });
+
+    if (featuresFiltered.length === 0) return;
+
+    const key = `${p.mainIndex}||${p.mainName}`;
+    if (!groups.has(key)) {
+      groups.set(key, {
+        mainIndex: p.mainIndex,
+        mainName: p.mainName || raw,
+        items: [],
+      });
+    }
+
+    groups.get(key).items.push({
+      subName: p.subName || p.mainName || raw,
+      categoryRaw: raw,
+      features: featuresFiltered,
+    });
+  });
+
+  // sort groups by mainIndex (numeric)
+  const groupList = Array.from(groups.values()).sort((a, b) => {
+    const ai = parseInt(a.mainIndex || "999", 10);
+    const bi = parseInt(b.mainIndex || "999", 10);
+    return ai - bi;
+  });
+
+  return groupList;
+}
+
+function renderFeatureTreeAndDetail() {
+  // 清空
+  matrixTree.innerHTML = "";
+  matrixDetail.innerHTML = "";
+
+  // 标题
+  const titleCard = document.createElement("div");
+  titleCard.className = "treeGroup";
+  titleCard.innerHTML = `
+    <div class="treeTitle">竞品功能模块</div>
+    <div class="muted mt8">点击子模块查看对应的竞品对比表（已隐藏 Elven 列）。</div>
+  `;
+  matrixTree.appendChild(titleCard);
+
+  const groups = buildFeatureTree(search.value);
+
+  // 默认选中第一个子模块
+  let firstItem = null;
+
+  groups.forEach((g) => {
+    const groupEl = document.createElement("div");
+    groupEl.className = "treeGroup";
+
+    groupEl.innerHTML = `
+      <div class="treeGroupHeader">
+        <div class="treeGroupIndex">${escapeHtml(g.mainIndex || "")}</div>
+        <div class="treeGroupName">${escapeHtml(g.mainName || "")}</div>
+      </div>
+      <div class="treeItems"></div>
+    `;
+
+    const itemsWrap = groupEl.querySelector(".treeItems");
+
+    g.items.forEach((it) => {
+      if (!firstItem) firstItem = it;
+
+      const row = document.createElement("div");
+      row.className = "treeItem";
+      row.dataset.category = it.categoryRaw;
+
+      row.innerHTML = `
+        <span class="treeCaret">▸</span>
+        <span>${escapeHtml(it.subName)}</span>
+        <span class="muted" style="margin-left:auto">${it.features.length} 条</span>
+      `;
+
+      row.addEventListener("click", () => {
+        // active style
+        document
+          .querySelectorAll(".treeItem")
+          .forEach((n) => n.classList.remove("treeItemActive"));
+        row.classList.add("treeItemActive");
+
+        renderDetailTable(it);
       });
 
-      if (features.length === 0) return;
+      itemsWrap.appendChild(row);
+    });
 
-      const competitorNames = data.competitors.map((c) => c.name);
+    matrixTree.appendChild(groupEl);
+  });
 
-      // ✅ 用 details/summary 让整个模块可折叠
-      const wrapper = document.createElement("details");
-      wrapper.className = "card";
-      wrapper.open = false; // 默认收起；如果你想默认展开改成 true
-
-      const summary = document.createElement("summary");
-      summary.className = "row space-between";
-      summary.style.cursor = "pointer";
-      summary.style.listStyle = "none"; // 让部分浏览器的默认三角不占位
-      // === 解析 category：核心流程 / 子模块 ===
-const raw = cat.category || "";
-let mainIndex = "";
-let mainName = "";
-let subName = raw;
-
-if (raw.includes("/")) {
-  const parts = raw.split("/");
-  const left = parts[0].trim();   // "1. 数据导入与账户管理"
-  subName = parts[1].trim();      // "账户接入与管理"
-
-  const match = left.match(/^(\d+)\.\s*(.+)$/);
-  if (match) {
-    mainIndex = match[1];         // "1"
-    mainName = match[2];          // "数据导入与账户管理"
+  // 初始渲染第一项
+  if (firstItem) {
+    // 设置第一个高亮
+    const firstNode = matrixTree.querySelector(".treeItem");
+    if (firstNode) firstNode.classList.add("treeItemActive");
+    renderDetailTable(firstItem);
+  } else {
+    matrixDetail.innerHTML = `<div class="card">没有匹配的功能点（请清空搜索）。</div>`;
   }
 }
+
+function renderDetailTable(item) {
+  matrixDetail.innerHTML = "";
+
+  const p = parseCategory(item.categoryRaw);
+
+  const card = document.createElement("div");
+  card.className = "card";
+
+  // 只显示：功能点 + 竞品列（去掉 Elven / ourProduct）
+  card.innerHTML = `
+    <div class="row space-between">
+      <div class="h3">${escapeHtml(p.mainIndex ? `${p.mainIndex}. ${p.mainName}` : p.mainName)} / ${escapeHtml(p.subName)}</div>
+      <div class="muted">${item.features.length} 条</div>
+    </div>
+
+    <div class="tableWrap mt12">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="min-width:320px">功能点</th>
+            ${competitorNames.map((n) => `<th style="min-width:110px">${escapeHtml(n)}</th>`).join("")}
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  `;
+
+  const tbody = card.querySelector("tbody");
+
+  item.features.forEach((f) => {
+    const tr = document.createElement("tr");
+
+    const notes = f._notes || {};
+
+    const tdName = document.createElement("td");
+    tdName.className = "feat";
+    tdName.textContent = f.name || "";
+    tr.appendChild(tdName);
+
+    competitorNames.forEach((n) => {
+      tr.appendChild(statusCell(f[n], notes[n]));
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  matrixDetail.appendChild(card);
+}
+
 
 summary.innerHTML = `
   <div class="h3">
@@ -193,6 +355,6 @@ summary.innerHTML = `
   }
 
   const search = $("search");
-  search.addEventListener("input", () => renderMatrix(search.value));
-  renderMatrix("");
+search.addEventListener("input", () => renderFeatureTreeAndDetail());
+renderFeatureTreeAndDetail();
 })();
