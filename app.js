@@ -8,35 +8,52 @@
 
   const $ = (id) => document.getElementById(id);
 
-  $("productName").textContent = data.meta.productName;
-  $("subtitle").textContent = data.meta.subtitle;
-  $("lastUpdated").textContent = data.meta.lastUpdated;
-  $("confidential").textContent = data.meta.confidential;
+  const productNameEl = $("productName");
+  const subtitleEl = $("subtitle");
+  const lastUpdatedEl = $("lastUpdated");
+  const confidentialEl = $("confidential");
 
-  $("positioning").textContent = data.overview.positioning;
-  const hl = $("highlights");
-  data.overview.highlights.forEach((t) => {
+  const positioningEl = $("positioning");
+  const highlightsEl = $("highlights");
+  const competitorsEl = $("competitors");
+  const battlecardsEl = $("battlecards");
+
+  const search = $("search");
+  const matrixTree = $("matrixTree");
+  const matrixDetail = $("matrixDetail");
+
+  const competitorNames = (data.competitors || []).map((c) => c.name);
+
+  // Header/meta
+  productNameEl.textContent = data.meta?.productName || "Competitive Report";
+  subtitleEl.textContent = data.meta?.subtitle || "—";
+  lastUpdatedEl.textContent = data.meta?.lastUpdated || "—";
+  confidentialEl.textContent = data.meta?.confidential || "—";
+
+  // Overview
+  positioningEl.textContent = data.overview?.positioning || "—";
+  (data.overview?.highlights || []).forEach((t) => {
     const li = document.createElement("li");
     li.textContent = t;
-    hl.appendChild(li);
+    highlightsEl.appendChild(li);
   });
 
-  const compWrap = $("competitors");
-  data.competitors.forEach((c) => {
+  // Landscape
+  (data.competitors || []).forEach((c) => {
     const div = document.createElement("div");
     div.className = "card";
     div.innerHTML = `
       <div class="row space-between">
         <div class="h3">${escapeHtml(c.name)}</div>
-        <span class="pill">${escapeHtml(c.tier)}</span>
+        <span class="pill">${escapeHtml(c.tier || "")}</span>
       </div>
       <div class="muted">${escapeHtml(c.tagline || "")}</div>
     `;
-    compWrap.appendChild(div);
+    competitorsEl.appendChild(div);
   });
 
-  const bcWrap = $("battlecards");
-  data.battlecards.forEach((b) => {
+  // Battlecards
+  (data.battlecards || []).forEach((b) => {
     const div = document.createElement("div");
     div.className = "card";
     div.innerHTML = `
@@ -46,285 +63,204 @@
       </div>
       <div class="mt8">${escapeHtml(b.oneLiner)}</div>
     `;
-    bcWrap.appendChild(div);
+    battlecardsEl.appendChild(div);
   });
 
-  const matrixTree = $("matrixTree");
-const matrixDetail = $("matrixDetail");
-const competitorNames = data.competitors.map((c) => c.name);
+  // ===== Feature tree & table (NO Elven column) =====
 
-  // === Feature Matrix Title ===
-const matrixTitle = document.createElement("div");
-matrixTitle.className = "card";
-matrixTitle.innerHTML = `
-  <div class="h2">竞品功能模块</div>
-  <div class="muted mt8">
-    按核心流程 → 子模块展开，对比 Elven 与主要竞品能力覆盖
-  </div>
-`;
-matrixWrap.appendChild(matrixTitle);
+  function parseCategory(raw) {
+    // raw like: "1. 数据导入与账户管理 / 账户接入与管理"
+    const out = { mainIndex: "", mainName: "", subName: raw || "" };
 
-  const competitorNames = data.competitors.map((c) => c.name);
+    if (!raw) return out;
 
-function parseCategory(raw) {
-  // raw like: "1. 数据导入与账户管理 / 账户接入与管理"
-  const out = { mainIndex: "", mainName: "", subName: raw || "" };
+    if (raw.includes("/")) {
+      const parts = raw.split("/");
+      const left = parts[0].trim();
+      out.subName = parts[1].trim();
 
-  if (!raw) return out;
-
-  if (raw.includes("/")) {
-    const parts = raw.split("/");
-    const left = parts[0].trim();
-    out.subName = parts[1].trim();
-
-    const m = left.match(/^(\d+)\.\s*(.+)$/);
-    if (m) {
-      out.mainIndex = m[1];
-      out.mainName = m[2];
+      const m = left.match(/^(\d+)\.\s*(.+)$/);
+      if (m) {
+        out.mainIndex = m[1];
+        out.mainName = m[2];
+      } else {
+        out.mainName = left;
+      }
     } else {
-      out.mainName = left;
+      const m = raw.match(/^(\d+)\.\s*(.+)$/);
+      if (m) {
+        out.mainIndex = m[1];
+        out.mainName = m[2];
+        out.subName = "";
+      } else {
+        out.mainName = raw;
+        out.subName = "";
+      }
     }
-  } else {
-    const m = raw.match(/^(\d+)\.\s*(.+)$/);
-    if (m) {
-      out.mainIndex = m[1];
-      out.mainName = m[2];
-      out.subName = "";
-    } else {
-      out.mainName = raw;
-      out.subName = "";
-    }
+
+    return out;
   }
 
-  return out;
-}
+  function buildFeatureTree(filterText) {
+    const q = (filterText || "").trim().toLowerCase();
 
-function buildFeatureTree(filterText) {
-  const q = (filterText || "").trim().toLowerCase();
+    const groups = new Map();
 
-  // group by mainIndex+mainName
-  const groups = new Map();
+    (data.featureMatrix || []).forEach((cat) => {
+      const raw = cat.category || "";
+      const p = parseCategory(raw);
 
-  data.featureMatrix.forEach((cat) => {
-    const raw = cat.category || "";
-    const p = parseCategory(raw);
-
-    const featuresFiltered = (cat.features || []).filter((f) => {
-      if (!q) return true;
-      const name = String(f.name || "").toLowerCase();
-      const catName = String(raw).toLowerCase();
-      return name.includes(q) || catName.includes(q);
-    });
-
-    if (featuresFiltered.length === 0) return;
-
-    const key = `${p.mainIndex}||${p.mainName}`;
-    if (!groups.has(key)) {
-      groups.set(key, {
-        mainIndex: p.mainIndex,
-        mainName: p.mainName || raw,
-        items: [],
+      const featuresFiltered = (cat.features || []).filter((f) => {
+        if (!q) return true;
+        const name = String(f.name || "").toLowerCase();
+        const catName = String(raw).toLowerCase();
+        return name.includes(q) || catName.includes(q);
       });
-    }
 
-    groups.get(key).items.push({
-      subName: p.subName || p.mainName || raw,
-      categoryRaw: raw,
-      features: featuresFiltered,
+      if (featuresFiltered.length === 0) return;
+
+      const key = `${p.mainIndex}||${p.mainName}`;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          mainIndex: p.mainIndex,
+          mainName: p.mainName || raw,
+          items: [],
+        });
+      }
+
+      groups.get(key).items.push({
+        subName: p.subName || p.mainName || raw,
+        categoryRaw: raw,
+        features: featuresFiltered,
+      });
     });
-  });
 
-  // sort groups by mainIndex (numeric)
-  const groupList = Array.from(groups.values()).sort((a, b) => {
-    const ai = parseInt(a.mainIndex || "999", 10);
-    const bi = parseInt(b.mainIndex || "999", 10);
-    return ai - bi;
-  });
+    const groupList = Array.from(groups.values()).sort((a, b) => {
+      const ai = parseInt(a.mainIndex || "999", 10);
+      const bi = parseInt(b.mainIndex || "999", 10);
+      return ai - bi;
+    });
 
-  return groupList;
-}
+    return groupList;
+  }
 
-function renderFeatureTreeAndDetail() {
-  // 清空
-  matrixTree.innerHTML = "";
-  matrixDetail.innerHTML = "";
+  function renderFeatureTreeAndDetail() {
+    matrixTree.innerHTML = "";
+    matrixDetail.innerHTML = "";
 
-  // 标题
-  const titleCard = document.createElement("div");
-  titleCard.className = "treeGroup";
-  titleCard.innerHTML = `
-    <div class="treeTitle">竞品功能模块</div>
-    <div class="muted mt8">点击子模块查看对应的竞品对比表（已隐藏 Elven 列）。</div>
-  `;
-  matrixTree.appendChild(titleCard);
-
-  const groups = buildFeatureTree(search.value);
-
-  // 默认选中第一个子模块
-  let firstItem = null;
-
-  groups.forEach((g) => {
-    const groupEl = document.createElement("div");
-    groupEl.className = "treeGroup";
-
-    groupEl.innerHTML = `
-      <div class="treeGroupHeader">
-        <div class="treeGroupIndex">${escapeHtml(g.mainIndex || "")}</div>
-        <div class="treeGroupName">${escapeHtml(g.mainName || "")}</div>
-      </div>
-      <div class="treeItems"></div>
+    // Title card
+    const titleCard = document.createElement("div");
+    titleCard.className = "treeGroup";
+    titleCard.innerHTML = `
+      <div class="treeTitle">竞品功能模块</div>
+      <div class="muted mt8">点击子模块查看对应的竞品对比表（已隐藏 Elven 列）。</div>
     `;
+    matrixTree.appendChild(titleCard);
 
-    const itemsWrap = groupEl.querySelector(".treeItems");
+    const groups = buildFeatureTree(search.value);
 
-    g.items.forEach((it) => {
-      if (!firstItem) firstItem = it;
+    let firstItem = null;
 
-      const row = document.createElement("div");
-      row.className = "treeItem";
-      row.dataset.category = it.categoryRaw;
+    groups.forEach((g) => {
+      const groupEl = document.createElement("div");
+      groupEl.className = "treeGroup";
 
-      row.innerHTML = `
-        <span class="treeCaret">▸</span>
-        <span>${escapeHtml(it.subName)}</span>
-        <span class="muted" style="margin-left:auto">${it.features.length} 条</span>
-      `;
-
-      row.addEventListener("click", () => {
-        // active style
-        document
-          .querySelectorAll(".treeItem")
-          .forEach((n) => n.classList.remove("treeItemActive"));
-        row.classList.add("treeItemActive");
-
-        renderDetailTable(it);
-      });
-
-      itemsWrap.appendChild(row);
-    });
-
-    matrixTree.appendChild(groupEl);
-  });
-
-  // 初始渲染第一项
-  if (firstItem) {
-    // 设置第一个高亮
-    const firstNode = matrixTree.querySelector(".treeItem");
-    if (firstNode) firstNode.classList.add("treeItemActive");
-    renderDetailTable(firstItem);
-  } else {
-    matrixDetail.innerHTML = `<div class="card">没有匹配的功能点（请清空搜索）。</div>`;
-  }
-}
-
-function renderDetailTable(item) {
-  matrixDetail.innerHTML = "";
-
-  const p = parseCategory(item.categoryRaw);
-
-  const card = document.createElement("div");
-  card.className = "card";
-
-  // 只显示：功能点 + 竞品列（去掉 Elven / ourProduct）
-  card.innerHTML = `
-    <div class="row space-between">
-      <div class="h3">${escapeHtml(p.mainIndex ? `${p.mainIndex}. ${p.mainName}` : p.mainName)} / ${escapeHtml(p.subName)}</div>
-      <div class="muted">${item.features.length} 条</div>
-    </div>
-
-    <div class="tableWrap mt12">
-      <table class="table">
-        <thead>
-          <tr>
-            <th style="min-width:320px">功能点</th>
-            ${competitorNames.map((n) => `<th style="min-width:110px">${escapeHtml(n)}</th>`).join("")}
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  `;
-
-  const tbody = card.querySelector("tbody");
-
-  item.features.forEach((f) => {
-    const tr = document.createElement("tr");
-
-    const notes = f._notes || {};
-
-    const tdName = document.createElement("td");
-    tdName.className = "feat";
-    tdName.textContent = f.name || "";
-    tr.appendChild(tdName);
-
-    competitorNames.forEach((n) => {
-      tr.appendChild(statusCell(f[n], notes[n]));
-    });
-
-    tbody.appendChild(tr);
-  });
-
-  matrixDetail.appendChild(card);
-}
-
-
-summary.innerHTML = `
-  <div class="h3">
-    ${mainIndex ? `${mainIndex}. ${escapeHtml(mainName)} / ` : ""}
-    ${escapeHtml(subName)}
-  </div>
-  <div class="muted">${features.length} 条</div>
-`;
-
-      // 防止 summary 点击选中文字导致怪异体验
-      summary.addEventListener("mousedown", (e) => e.preventDefault());
-
-      const content = document.createElement("div");
-      content.className = "mt12";
-
-      content.innerHTML = `
-        <div class="tableWrap">
-          <table class="table">
-            <thead>
-              <tr>
-                <th style="min-width:280px">Elven 功能点</th>
-                <th style="min-width:90px">Elven</th>
-                ${competitorNames
-                  .map((n) => `<th style="min-width:100px">${escapeHtml(n)}</th>`)
-                  .join("")}
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+      groupEl.innerHTML = `
+        <div class="treeGroupHeader">
+          <div class="treeGroupIndex">${escapeHtml(g.mainIndex || "")}</div>
+          <div class="treeGroupName">${escapeHtml(g.mainName || "")}</div>
         </div>
+        <div class="treeItems"></div>
       `;
 
-      const tbody = content.querySelector("tbody");
+      const itemsWrap = groupEl.querySelector(".treeItems");
 
-      features.forEach((f) => {
-        const tr = document.createElement("tr");
+      g.items.forEach((it) => {
+        if (!firstItem) firstItem = it;
 
-        const notes = f._notes || {};
-        const tdName = document.createElement("td");
-        tdName.className = "feat";
-        tdName.textContent = f.name || "";
-        tr.appendChild(tdName);
+        const row = document.createElement("div");
+        row.className = "treeItem";
+        row.dataset.category = it.categoryRaw;
 
-        tr.appendChild(statusCell(f.ourProduct, null));
+        row.innerHTML = `
+          <span class="treeCaret">▸</span>
+          <span>${escapeHtml(it.subName)}</span>
+          <span class="muted" style="margin-left:auto">${it.features.length} 条</span>
+        `;
 
-        competitorNames.forEach((n) => {
-          tr.appendChild(statusCell(f[n], notes[n]));
+        row.addEventListener("click", () => {
+          document
+            .querySelectorAll(".treeItem")
+            .forEach((n) => n.classList.remove("treeItemActive"));
+          row.classList.add("treeItemActive");
+
+          renderDetailTable(it);
         });
 
-        tbody.appendChild(tr);
+        itemsWrap.appendChild(row);
       });
 
-      wrapper.appendChild(summary);
-      wrapper.appendChild(content);
-      matrixWrap.appendChild(wrapper);
+      matrixTree.appendChild(groupEl);
     });
+
+    if (firstItem) {
+      const firstNode = matrixTree.querySelector(".treeItem");
+      if (firstNode) firstNode.classList.add("treeItemActive");
+      renderDetailTable(firstItem);
+    } else {
+      matrixDetail.innerHTML = `<div class="card">没有匹配的功能点（请清空搜索）。</div>`;
+    }
   }
 
+  function renderDetailTable(item) {
+    matrixDetail.innerHTML = "";
+
+    const p = parseCategory(item.categoryRaw);
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    // ✅ 表格：功能点 + 竞品列（去掉 Elven / ourProduct）
+    card.innerHTML = `
+      <div class="row space-between">
+        <div class="h3">${escapeHtml(p.mainIndex ? `${p.mainIndex}. ${p.mainName}` : p.mainName)}${p.subName ? ` / ${escapeHtml(p.subName)}` : ""}</div>
+        <div class="muted">${item.features.length} 条</div>
+      </div>
+
+      <div class="tableWrap mt12">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="min-width:320px">功能点</th>
+              ${competitorNames.map((n) => `<th style="min-width:110px">${escapeHtml(n)}</th>`).join("")}
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    `;
+
+    const tbody = card.querySelector("tbody");
+
+    item.features.forEach((f) => {
+      const tr = document.createElement("tr");
+
+      const notes = f._notes || {};
+
+      const tdName = document.createElement("td");
+      tdName.className = "feat";
+      tdName.textContent = f.name || "";
+      tr.appendChild(tdName);
+
+      competitorNames.forEach((n) => {
+        tr.appendChild(statusCell(f[n], notes[n]));
+      });
+
+      tbody.appendChild(tr);
+    });
+
+    matrixDetail.appendChild(card);
+  }
 
   function statusCell(status, note) {
     const td = document.createElement("td");
@@ -354,7 +290,6 @@ summary.innerHTML = `
       .replaceAll("'", "&#39;");
   }
 
-  const search = $("search");
-search.addEventListener("input", () => renderFeatureTreeAndDetail());
-renderFeatureTreeAndDetail();
+  search.addEventListener("input", () => renderFeatureTreeAndDetail());
+  renderFeatureTreeAndDetail();
 })();
