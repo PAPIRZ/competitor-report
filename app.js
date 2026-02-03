@@ -50,6 +50,17 @@
   });
 
   const matrixWrap = $("matrix");
+  // === Feature Matrix Title ===
+const matrixTitle = document.createElement("div");
+matrixTitle.className = "card";
+matrixTitle.innerHTML = `
+  <div class="h2">竞品功能模块</div>
+  <div class="muted mt8">
+    按核心流程 → 子模块展开，对比 Elven 与主要竞品能力覆盖
+  </div>
+`;
+matrixWrap.appendChild(matrixTitle);
+
   const competitorNames = data.competitors.map((c) => c.name);
 
    function renderMatrix(filterText) {
@@ -77,10 +88,31 @@
       summary.className = "row space-between";
       summary.style.cursor = "pointer";
       summary.style.listStyle = "none"; // 让部分浏览器的默认三角不占位
-      summary.innerHTML = `
-        <div class="h3">${idx + 1}. ${escapeHtml(cat.category)}</div>
-        <div class="muted">${features.length} 条</div>
-      `;
+      // === 解析 category：核心流程 / 子模块 ===
+const raw = cat.category || "";
+let mainIndex = "";
+let mainName = "";
+let subName = raw;
+
+if (raw.includes("/")) {
+  const parts = raw.split("/");
+  const left = parts[0].trim();   // "1. 数据导入与账户管理"
+  subName = parts[1].trim();      // "账户接入与管理"
+
+  const match = left.match(/^(\d+)\.\s*(.+)$/);
+  if (match) {
+    mainIndex = match[1];         // "1"
+    mainName = match[2];          // "数据导入与账户管理"
+  }
+}
+
+summary.innerHTML = `
+  <div class="h3">
+    ${mainIndex ? `${mainIndex}. ${escapeHtml(mainName)} / ` : ""}
+    ${escapeHtml(subName)}
+  </div>
+  <div class="muted">${features.length} 条</div>
+`;
 
       // 防止 summary 点击选中文字导致怪异体验
       summary.addEventListener("mousedown", (e) => e.preventDefault());
