@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Competitive Report</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">CR</div>
+        <div>
+          <div class="brandTitle" id="productName">Competitive Report</div>
+          <div class="brandSub" id="subtitle">—</div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <div class="metaRow"><span class="muted">Last updated</span><span id="lastUpdated">—</span></div>
+        <div class="metaRow"><span class="muted">Note</span><span id="confidential">—</span></div>
+      </div>
+
+      <nav class="nav">
+        <a href="#overview">Overview</a>
+        <a href="#landscape">Landscape</a>
+        <a href="#matrix">Feature Matrix</a>
+        <a href="#battlecards">Battlecards</a>
+      </nav>
+
+      <div class="help">
+        <div class="muted">小提示</div>
+        <div class="helpText">把鼠标悬停在“支持/部分支持/不支持”上，可能会看到来自 Excel 的备注说明。</div>
+      </div>
+    </aside>
+
+    <main class="main" id="app">
+      <section class="hero" id="overview">
+        <h1 class="h1">Overview</h1>
+        <p class="lead" id="positioning">—</p>
+        <ul class="bullets" id="highlights"></ul>
+      </section>
+
+      <section class="section" id="landscape">
+        <div class="row space-between">
+          <h2 class="h2">Competitive Landscape</h2>
+        </div>
+        <div class="grid" id="competitors"></div>
+      </section>
+
+      <section class="section" id="matrix">
+        <div class="row space-between">
+          <h2 class="h2">Feature Matrix</h2>
+          <input class="search" id="search" placeholder="搜索功能点或模块…" />
+        </div>
+        <div class="stack" id="matrix"></div>
+      </section>
+
+      <section class="section" id="battlecards">
+        <h2 class="h2">Battlecards</h2>
+        <div class="grid" id="battlecards"></div>
+      </section>
+
+      <footer class="footer">
+        <span class="muted">Static report · GitHub Pages friendly</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="reportData.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
