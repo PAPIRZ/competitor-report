@@ -1,0 +1,145 @@
+:root{
+  --bg:#f6f7fb;
+  --card:#fff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --border:#e2e8f0;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 10px 20px rgba(0,0,0,.03);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+  color:var(--text);
+  background:var(--bg);
+}
+a{color:inherit;text-decoration:none}
+.layout{display:flex;min-height:100vh}
+.sidebar{
+  width:280px;
+  padding:18px;
+  border-right:1px solid var(--border);
+  background:rgba(255,255,255,.6);
+  backdrop-filter: blur(8px);
+  position:sticky;
+  top:0;
+  height:100vh;
+  overflow:auto;
+}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{
+  width:38px;height:38px;border-radius:12px;
+  background:#111827;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:14px;
+}
+.brandTitle{font-weight:800}
+.brandSub{color:var(--muted);font-size:12px;margin-top:2px}
+.meta{margin-top:14px;padding:12px;border:1px solid var(--border);border-radius:16px;background:var(--card);box-shadow:var(--shadow)}
+.metaRow{display:flex;justify-content:space-between;font-size:12px;gap:10px;margin:6px 0}
+.nav{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.nav a{
+  padding:10px 12px;border-radius:12px;
+  border:1px solid transparent;
+}
+.nav a:hover{background:var(--card);border-color:var(--border)}
+.help{margin-top:14px;padding:12px;border-radius:16px;border:1px solid var(--border);background:var(--card);box-shadow:var(--shadow)}
+.helpText{margin-top:6px;font-size:12px;color:var(--muted);line-height:1.4}
+
+.main{flex:1;padding:22px}
+.hero{
+  padding:18px;border-radius:22px;background:var(--card);
+  border:1px solid var(--border);box-shadow:var(--shadow)
+}
+.section{margin-top:18px}
+.h1{margin:0;font-size:22px}
+.h2{margin:0;font-size:18px}
+.h3{font-weight:700}
+.lead{margin:10px 0 0;color:#334155;line-height:1.6}
+.bullets{margin:10px 0 0;padding-left:18px;color:#334155}
+.bullets li{margin:6px 0;line-height:1.5}
+.row{display:flex;align-items:center;gap:12px}
+.space-between{justify-content:space-between}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.stack{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:14px;
+  box-shadow:var(--shadow);
+}
+.muted{color:var(--muted)}
+.mt8{margin-top:8px}
+.mt12{margin-top:12px}
+
+.pill{
+  font-size:12px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:#111827;
+  color:#fff;
+}
+.search{
+  width:260px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:#fff;
+  outline:none;
+}
+.search:focus{border-color:#94a3b8}
+
+.tableWrap{overflow:auto;border-radius:16px;border:1px solid var(--border)}
+.table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  min-width:900px;
+  background:#fff;
+}
+.table thead th{
+  position:sticky;top:0;
+  background:#f8fafc;
+  color:var(--muted);
+  font-weight:600;
+  font-size:12px;
+  text-align:left;
+  padding:10px 12px;
+  border-bottom:1px solid var(--border);
+}
+.table td{
+  padding:10px 12px;
+  border-bottom:1px solid #f1f5f9;
+  vertical-align:top;
+  font-size:13px;
+}
+.table tr:last-child td{border-bottom:none}
+.feat{color:#0f172a}
+.center{text-align:center}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:70px;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  border:1px solid var(--border);
+  background:#fff;
+}
+.badge.ok{border-color:#16a34a33;background:#16a34a12}
+.badge.partial{border-color:#f59e0b33;background:#f59e0b12}
+.badge.no{border-color:#ef444433;background:#ef444412}
+.badge.unknown{border-color:#94a3b833;background:#94a3b812}
+
+.footer{margin-top:24px;padding:12px;text-align:center}
+
+@media (max-width: 980px){
+  .layout{flex-direction:column}
+  .sidebar{width:auto;height:auto;position:relative}
+  .grid{grid-template-columns:1fr}
+  .search{width:100%}
+}
