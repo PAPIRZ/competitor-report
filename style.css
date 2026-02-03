@@ -164,3 +164,66 @@ details > summary:hover {
   background: #ffffff;
   border-radius: 14px;
 }
+/* Feature tree */
+.treeWrap{
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.treeTitle{
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.treeGroup{
+  background: var(--card);
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:14px;
+  box-shadow: var(--shadow);
+}
+
+.treeGroupHeader{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+.treeGroupIndex{
+  font-weight:800;
+  color:#2563eb;
+  min-width: 22px;
+}
+
+.treeGroupName{
+  font-weight:800;
+}
+
+.treeItem{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid transparent;
+  cursor:pointer;
+}
+
+.treeItem:hover{
+  background:#fff;
+  border-color:var(--border);
+}
+
+.treeItemActive{
+  background:#fff;
+  border-color:#cbd5e1;
+}
+
+.treeCaret{
+  color: var(--muted);
+  width: 16px;
+  display:inline-block;
+}
